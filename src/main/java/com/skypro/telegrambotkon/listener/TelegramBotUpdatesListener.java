@@ -2,26 +2,16 @@ package com.skypro.telegrambotkon.listener;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
-import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.skypro.telegrambotkon.entity.NotificationTask;
 import com.skypro.telegrambotkon.service.NotificationTaskService;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-
-import com.pengrad.telegrambot.model.Message;
-import com.pengrad.telegrambot.request.SendMessage;
-import org.springframework.scheduling.annotation.Scheduled;
-
-//import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -62,9 +52,10 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             updates.forEach(update -> {
                 LOG.info("Processing update: {}", update);
                 String text = update.message().text();
-                Long chatId = update.message().chat().id();
+//                Long userId = update.message().chat().id();
+                Long userId = update.message().from().id();
                 if("/start".equals(text)) { //последовательность такая, чтобы иквлс обработал text если будет null и не выбросилось исключение.
-                    SendMessage sendMessage = new SendMessage(chatId,
+                    SendMessage sendMessage = new SendMessage(userId,
                             "Для планирования задачи отправьте её в формате:\n*01.01.2022 20:00 Сделать домашнюю работу*");
                     sendMessage.parseMode(ParseMode.Markdown);
                     telegramBot.execute(sendMessage);
@@ -74,13 +65,13 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                         LocalDateTime localDateTime = parse(matcher.group(1));
                         if (!Objects.isNull(localDateTime)) {
                             String message = matcher.group(3);
-                            notificationTaskService.addNotificationTask(localDateTime, message, chatId);
-                            telegramBot.execute(new SendMessage(chatId, "Ваша задача запланирована!"));
+                            notificationTaskService.addNotificationTask(localDateTime, message, userId);
+                            telegramBot.execute(new SendMessage(userId, "Ваша задача запланирована!"));
                         } else {
-                            telegramBot.execute(new SendMessage(chatId, "Некорректный формат даты и/или времени!"));
+                            telegramBot.execute(new SendMessage(userId, "Некорректный формат даты и/или времени!"));
                         }
                     } else {
-                        telegramBot.execute(new SendMessage(chatId, "Некорректный формат задачи для планирования! Корректный формат: 01.01.2022 20:00 Сделать домашнюю работу"));
+                        telegramBot.execute(new SendMessage(userId, "Некорректный формат задачи для планирования! Корректный формат: 01.01.2022 20:00 Сделать домашнюю работу"));
                     }
                 }
             });
